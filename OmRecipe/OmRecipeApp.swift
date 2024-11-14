@@ -12,7 +12,7 @@ struct OmRecipeApp: App {
     @StateObject private var recipeData: RecipeData = .init()
     var body: some Scene {
         WindowGroup {
-            RecipeListView()
+            SplashScreenView()
                 .environmentObject(recipeData)
         }
     }
