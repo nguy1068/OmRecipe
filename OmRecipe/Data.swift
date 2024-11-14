@@ -1,10 +1,3 @@
-//
-//  Data.swift
-//  OmRecipe
-//
-//  Created by Dat Nguyen(Mike) on 2024-11-13.
-//
-
 import SwiftUI
 
 class RecipeData: ObservableObject {
