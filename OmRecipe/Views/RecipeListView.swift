@@ -47,26 +47,32 @@ struct RecipeListView: View {
                     .padding()
                 } else {
                     List {
-                        ForEach(recipeData.recipes.filter { recipe in
-                            if searchText.isEmpty {
-                                return true
-                            }
+                        ForEach(
+                            recipeData.recipes.filter { recipe in
+                                if searchText.isEmpty {
+                                    return true
+                                }
 
-                            switch searchMode {
-                            case .title:
-                                return recipe.title.localizedStandardContains(searchText)
-                            case .ingredients:
-                                let searchWords = searchText.components(separatedBy: .whitespaces)
-                                return searchWords.allSatisfy { searchWord in
-                                    recipe.ingredients.contains { ingredient in
-                                        ingredient.localizedStandardContains(searchWord)
+                                switch searchMode {
+                                case .title:
+                                    return recipe.title.localizedStandardContains(searchText)
+                                case .ingredients:
+                                    let searchWords = searchText.components(
+                                        separatedBy: .whitespaces)
+                                    return searchWords.allSatisfy { searchWord in
+                                        recipe.ingredients.contains { ingredient in
+                                            ingredient.localizedStandardContains(searchWord)
+                                        }
                                     }
                                 }
                             }
-                        }) { recipe in
+                        ) { recipe in
                             NavigationLink(destination: RecipeDetailView(recipe: recipe)) {
                                 HStack(alignment: .top, spacing: 20) {
-                                    let uiImage = loadImage(for: recipe) ?? UIImage(named: recipe.thumbnailImagePath ?? "default_recipe")
+                                    let uiImage =
+                                        loadImage(for: recipe)
+                                        ?? UIImage(
+                                            named: recipe.thumbnailImagePath ?? "default_recipe")
                                     if let uiImage = uiImage {
                                         Image(uiImage: uiImage)
                                             .resizable()
@@ -86,10 +92,12 @@ struct RecipeListView: View {
                                     VStack(alignment: .leading, spacing: 10) {
                                         Text(recipe.title)
                                             .font(.headline)
-                                        Text(recipe.description.count > 50
-                                            ? String(recipe.description.prefix(50)) + "..."
-                                            : recipe.description)
-                                            .font(.subheadline)
+                                        Text(
+                                            recipe.description.count > 50
+                                                ? String(recipe.description.prefix(50)) + "..."
+                                                : recipe.description
+                                        )
+                                        .font(.subheadline)
                                     }
                                 }
                             }
@@ -109,7 +117,8 @@ struct RecipeListView: View {
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "Search by \(searchMode.rawValue.lowercased())...")
+            .searchable(
+                text: $searchText, prompt: "Search by \(searchMode.rawValue.lowercased())...")
         }
     }
 }
