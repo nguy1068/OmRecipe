@@ -49,7 +49,7 @@ struct DrinkListView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var selectedDrinkDetail: DrinkDetail?
-    @State private var currentPage = 1
+    @State private var currentIndex = 0
 
     var body: some View {
         NavigationStack {
@@ -61,38 +61,18 @@ struct DrinkListView: View {
                         .foregroundColor(.red)
                         .padding()
                 } else {
-                    List {
-                        ForEach(drinks) { drink in
-                            HStack(alignment: .top, spacing: 20) {
-                                AsyncImage(url: URL(string: drink.strDrinkThumb)) { image in
-                                    image.resizable()
-                                } placeholder: {
-                                    ProgressView()
-                                }
-                                .frame(width: 70, height: 70)
-                                .cornerRadius(8)
-                                .clipped()
-
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text(drink.strDrink)
-                                        .font(.headline)
-                                    Button("View Details") {
-                                        fetchDrinkDetail(idDrink: drink.idDrink) { detail in
-                                            self.selectedDrinkDetail = detail
-                                        }
-                                    }
-                                    .font(.subheadline)
-                                    .foregroundColor(.blue)
-                                }
-                            }
-                            .padding(.vertical, 5)
-                            .onAppear {
-                                if drink == drinks.last {
-                                    loadMoreDrinks()
-                                }
+                    Spacer()
+                    GeometryReader { geometry in
+                        ZStack {
+                            ForEach(
+                                currentIndex ..< min(currentIndex + 100, drinks.count), id: \.self)
+                            { index in
+                                CardView(drink: drinks[index])
+                                    .frame(width: geometry.size.width, height: geometry.size.height) //
                             }
                         }
                     }
+                    Spacer()
                 }
             }
             .navigationTitle("Drinks")
@@ -119,7 +99,7 @@ struct DrinkListView: View {
                     let decodedResponse = try JSONDecoder().decode(
                         [String: [Drink]].self, from: data)
                     DispatchQueue.main.async {
-                        self.drinks = decodedResponse["drinks"]?.prefix(10).map { $0 } ?? []
+                        self.drinks = decodedResponse["drinks"]?.prefix(100).map { $0 } ?? []
                         self.isLoading = false
                     }
                 } catch {
@@ -132,39 +112,6 @@ struct DrinkListView: View {
                 DispatchQueue.main.async {
                     self.errorMessage = "Error fetching data: \(error.localizedDescription)"
                     self.isLoading = false
-                }
-            }
-        }.resume()
-    }
-
-    private func loadMoreDrinks() {
-        currentPage += 1
-        guard
-            let url = URL(
-                string:
-                "https://www.thecocktaildb.com/api/json/v1/1/filter.php?a=Non_Alcoholic&page=\(currentPage)"
-            )
-        else {
-            return
-        }
-
-        URLSession.shared.dataTask(with: url) { data, _, error in
-            if let data = data {
-                do {
-                    let decodedResponse = try JSONDecoder().decode(
-                        [String: [Drink]].self, from: data)
-                    DispatchQueue.main.async {
-                        let newDrinks = decodedResponse["drinks"]?.prefix(10).map { $0 } ?? []
-                        self.drinks.append(contentsOf: newDrinks)
-                    }
-                } catch {
-                    DispatchQueue.main.async {
-                        self.errorMessage = "Error decoding data: \(error.localizedDescription)"
-                    }
-                }
-            } else if let error = error {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Error fetching data: \(error.localizedDescription)"
                 }
             }
         }.resume()
@@ -204,57 +151,94 @@ struct DrinkDetailView: View {
     let drinkDetail: DrinkDetail
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(drinkDetail.strDrink)
-                .font(.largeTitle)
-                .padding(.bottom)
-            if let imageUrl = drinkDetail.strDrinkThumb, let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable()
-                } placeholder: {
-                    ProgressView()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(drinkDetail.strDrink)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.bottom, 8)
+
+                if let imageUrl = drinkDetail.strDrinkThumb, let url = URL(string: imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(
+                                width: UIScreen.main.bounds.width - 32,
+                                height: (UIScreen.main.bounds.width - 32) * 3 / 4)
+                            .clipped()
+                            .cornerRadius(12)
+                    } placeholder: {
+                        ProgressView()
+                            .frame(
+                                width: UIScreen.main.bounds.width - 32,
+                                height: (UIScreen.main.bounds.width - 32) * 3 / 4)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
                 }
-                .frame(width: 200, height: 200)
-                .cornerRadius(8)
-                .clipped()
-                .padding(.bottom)
+
+                if let category = drinkDetail.strCategory {
+                    DetailRow(label: "Category", value: category, isMultiline: false)
+                }
+
+                if let alcoholic = drinkDetail.strAlcoholic {
+                    DetailRow(label: "Alcoholic", value: alcoholic, isMultiline: false)
+                }
+
+                if let glass = drinkDetail.strGlass {
+                    DetailRow(label: "Glass", value: glass, isMultiline: false)
+                }
+
+                if let instructions = drinkDetail.strInstructions {
+                    DetailRow(label: "Instructions", value: instructions, isMultiline: true)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ingredients")
+                        .font(.headline)
+                        .padding(.bottom, 4)
+
+                    if let ingredient1 = drinkDetail.strIngredient1 {
+                        Text("• \(ingredient1)")
+                    }
+                    if let ingredient2 = drinkDetail.strIngredient2 {
+                        Text("• \(ingredient2)")
+                    }
+                    if let ingredient3 = drinkDetail.strIngredient3 {
+                        Text("• \(ingredient3)")
+                    }
+                }
+                .padding(.top, 8)
             }
-            if let category = drinkDetail.strCategory {
-                Text("Category: \(category)")
-                    .font(.headline)
-                    .padding(.bottom)
-            }
-            if let alcoholic = drinkDetail.strAlcoholic {
-                Text("Alcoholic: \(alcoholic)")
-                    .font(.headline)
-                    .padding(.bottom)
-            }
-            if let glass = drinkDetail.strGlass {
-                Text("Glass: \(glass)")
-                    .font(.headline)
-                    .padding(.bottom)
-            }
-            if let instructions = drinkDetail.strInstructions {
-                Text("Instructions: \(instructions)")
-                    .font(.body)
-                    .padding(.bottom)
-            }
-            if let ingredient1 = drinkDetail.strIngredient1 {
-                Text("Ingredient 1: \(ingredient1)")
-                    .font(.body)
-                    .padding(.bottom)
-            }
-            if let ingredient2 = drinkDetail.strIngredient2 {
-                Text("Ingredient 2: \(ingredient2)")
-                    .font(.body)
-                    .padding(.bottom)
-            }
-            if let ingredient3 = drinkDetail.strIngredient3 {
-                Text("Ingredient 3: \(ingredient3)")
-                    .font(.body)
-                    .padding(.bottom)
+            .padding()
+        }
+        .navigationTitle(drinkDetail.strDrink)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct DetailRow: View {
+    let label: String
+    let value: String
+    let isMultiline: Bool
+
+    var body: some View {
+        HStack(alignment: .top) {
+            Text("\(label):")
+                .fontWeight(.semibold)
+                .frame(width: 100, alignment: .leading) // Adjust width as needed
+            Spacer()
+            if isMultiline {
+                VStack(alignment: .leading) {
+                    Text(value)
+                        .multilineTextAlignment(.leading)
+                }
+            } else {
+                Text(value)
+                    .multilineTextAlignment(.leading)
             }
         }
-        .padding()
+        .padding(.vertical, 4)
     }
 }

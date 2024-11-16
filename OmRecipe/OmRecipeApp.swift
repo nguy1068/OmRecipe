@@ -6,7 +6,7 @@ struct OmRecipeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            SplashScreenView()
                 .environmentObject(recipeData)
         }
     }

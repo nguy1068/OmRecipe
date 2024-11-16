@@ -20,5 +20,9 @@
         "editor.defaultFormatter": "sweetpad.sweetpad",
         "editor.formatOnSave": true
     },
-    "editor.quickSuggestions": false
+    "editor.quickSuggestions": {
+        "comments": "off",
+        "strings": "off",
+        "other": "off"
+    }
 }
