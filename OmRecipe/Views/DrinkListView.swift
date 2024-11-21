@@ -49,6 +49,7 @@ struct DrinkListView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var selectedDrinkDetail: DrinkDetail?
+    @State private var isSheetPresented = false
     @State private var currentIndex = 0
 
     var body: some View {
@@ -65,22 +66,29 @@ struct DrinkListView: View {
                     GeometryReader { geometry in
                         ZStack {
                             ForEach(
-                                currentIndex ..< min(currentIndex + 100, drinks.count), id: \.self)
-                            { index in
-                                CardView(drink: drinks[index])
-                                    .frame(width: geometry.size.width, height: geometry.size.height) //
+                                currentIndex ..< min(currentIndex + 100, drinks.count), id: \.self
+                            ) { index in
+                                CardView(
+                                    drink: drinks[index], selectedDrinkDetail: $selectedDrinkDetail,
+                                    isSheetPresented: $isSheetPresented
+                                )
+                                .frame(width: geometry.size.width, height: geometry.size.height) //
                             }
                         }
                     }
                     Spacer()
                 }
             }
-            .navigationTitle("Drinks")
+            .navigationTitle("Drinks🥃🧃🍸☕️")
             .onAppear {
                 fetchDrinks()
             }
-            .sheet(item: $selectedDrinkDetail) { detail in
-                DrinkDetailView(drinkDetail: detail)
+            .sheet(isPresented: $isSheetPresented) {
+                if let detail = selectedDrinkDetail {
+                    DrinkDetailView(drinkDetail: detail)
+                } else {
+                    Text("No details available")
+                }
             }
         }
     }
@@ -97,7 +105,8 @@ struct DrinkListView: View {
             if let data = data {
                 do {
                     let decodedResponse = try JSONDecoder().decode(
-                        [String: [Drink]].self, from: data)
+                        [String: [Drink]].self, from: data
+                    )
                     DispatchQueue.main.async {
                         self.drinks = decodedResponse["drinks"]?.prefix(100).map { $0 } ?? []
                         self.isLoading = false
@@ -117,128 +126,104 @@ struct DrinkListView: View {
         }.resume()
     }
 
-    private func fetchDrinkDetail(idDrink: String, completion: @escaping (DrinkDetail?) -> Void) {
-        guard
-            let url = URL(
-                string: "https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=\(idDrink)")
-        else {
-            return
-        }
+    struct DrinkDetailView: View {
+        let drinkDetail: DrinkDetail
 
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            if let data = data {
-                do {
-                    let decodedResponse = try JSONDecoder().decode(
-                        [String: [DrinkDetail]].self, from: data)
-                    DispatchQueue.main.async {
-                        completion(decodedResponse["drinks"]?.first)
+        var body: some View {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(drinkDetail.strDrink)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .padding()
+
+                    if let imageUrl = drinkDetail.strDrinkThumb, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(
+                                    width: UIScreen.main.bounds.width - 32,
+                                    height: (UIScreen.main.bounds.width - 32) * 3 / 4
+                                )
+                                .clipped()
+                                .cornerRadius(12)
+                        } placeholder: {
+                            ProgressView()
+                                .frame(
+                                    width: UIScreen.main.bounds.width - 32,
+                                    height: (UIScreen.main.bounds.width - 32) * 3 / 4
+                                )
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 16)
                     }
-                } catch {
-                    DispatchQueue.main.async {
-                        completion(nil)
+
+                    if let category = drinkDetail.strCategory {
+                        DetailRow(label: "Category:", value: category, isMultiline: false)
                     }
+
+                    if let alcoholic = drinkDetail.strAlcoholic {
+                        DetailRow(label: "Alcoholic:", value: alcoholic, isMultiline: false)
+                    }
+
+                    if let glass = drinkDetail.strGlass {
+                        DetailRow(label: "Glass:", value: glass, isMultiline: false)
+                    }
+
+                    if let instructions = drinkDetail.strInstructions {
+                        DetailRow(label: "Instructions:", value: instructions, isMultiline: true)
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Main Ingredients")
+                            .font(.headline)
+                            .padding(.bottom, 4)
+
+                        if let ingredient1 = drinkDetail.strIngredient1 {
+                            Text("• \(ingredient1)")
+                        }
+                        if let ingredient2 = drinkDetail.strIngredient2 {
+                            Text("• \(ingredient2)")
+                        }
+                        if let ingredient3 = drinkDetail.strIngredient3 {
+                            Text("• \(ingredient3)")
+                        }
+                    }
+                    .padding()
                 }
-            } else {
-                DispatchQueue.main.async {
-                    completion(nil)
-                }
+                .padding()
             }
-        }.resume()
-    }
-}
-
-struct DrinkDetailView: View {
-    let drinkDetail: DrinkDetail
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(drinkDetail.strDrink)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.bottom, 8)
-
-                if let imageUrl = drinkDetail.strDrinkThumb, let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(
-                                width: UIScreen.main.bounds.width - 32,
-                                height: (UIScreen.main.bounds.width - 32) * 3 / 4)
-                            .clipped()
-                            .cornerRadius(12)
-                    } placeholder: {
-                        ProgressView()
-                            .frame(
-                                width: UIScreen.main.bounds.width - 32,
-                                height: (UIScreen.main.bounds.width - 32) * 3 / 4)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 16)
-                }
-
-                if let category = drinkDetail.strCategory {
-                    DetailRow(label: "Category", value: category, isMultiline: false)
-                }
-
-                if let alcoholic = drinkDetail.strAlcoholic {
-                    DetailRow(label: "Alcoholic", value: alcoholic, isMultiline: false)
-                }
-
-                if let glass = drinkDetail.strGlass {
-                    DetailRow(label: "Glass", value: glass, isMultiline: false)
-                }
-
-                if let instructions = drinkDetail.strInstructions {
-                    DetailRow(label: "Instructions", value: instructions, isMultiline: true)
-                }
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Ingredients")
-                        .font(.headline)
-                        .padding(.bottom, 4)
-
-                    if let ingredient1 = drinkDetail.strIngredient1 {
-                        Text("• \(ingredient1)")
-                    }
-                    if let ingredient2 = drinkDetail.strIngredient2 {
-                        Text("• \(ingredient2)")
-                    }
-                    if let ingredient3 = drinkDetail.strIngredient3 {
-                        Text("• \(ingredient3)")
-                    }
-                }
-                .padding(.top, 8)
-            }
-            .padding()
+            .navigationTitle(drinkDetail.strDrink)
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .navigationTitle(drinkDetail.strDrink)
-        .navigationBarTitleDisplayMode(.inline)
     }
-}
 
-struct DetailRow: View {
-    let label: String
-    let value: String
-    let isMultiline: Bool
+    struct DetailRow: View {
+        let label: String
+        let value: String
+        let isMultiline: Bool
 
-    var body: some View {
-        HStack(alignment: .top) {
-            Text("\(label):")
-                .fontWeight(.semibold)
-                .frame(width: 100, alignment: .leading) // Adjust width as needed
-            Spacer()
+        var body: some View {
             if isMultiline {
                 VStack(alignment: .leading) {
+                    Text("\(label)")
+                        .fontWeight(.semibold)
+                        .frame(width: 120, alignment: .leading) // Adjust width as needed
+                    Spacer()
                     Text(value)
                         .multilineTextAlignment(.leading)
-                }
+                }.padding()
             } else {
-                Text(value)
-                    .multilineTextAlignment(.leading)
+                HStack(alignment: .top) {
+                    Text("\(label)")
+                        .fontWeight(.semibold)
+                        .frame(width: 100, alignment: .leading) // Adjust width as needed
+                    Text(value)
+                        .multilineTextAlignment(.leading)
+                    Spacer()
+                }.padding()
             }
         }
-        .padding(.vertical, 4)
     }
 }

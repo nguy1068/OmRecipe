@@ -2,10 +2,12 @@ import SwiftUI
 
 struct CardView: View {
     let drink: Drink
+    @Binding var selectedDrinkDetail: DrinkDetail?
+    @Binding var isSheetPresented: Bool
     @State private var offset = CGSize.zero
     @State private var color: Color = .blue
-    @State private var overlayOpacity: Double = 0.0 
-
+    @State private var overlayOpacity: Double = 0.0
+    
     var body: some View {
         ZStack {
             VStack {
@@ -21,6 +23,7 @@ struct CardView: View {
                 .cornerRadius(12)
                 .clipped()
                 .padding(.bottom, 16)
+                
                 Text(drink.strDrink)
                     .font(.title)
                     .foregroundColor(.black)
@@ -49,8 +52,8 @@ struct CardView: View {
                 }
         )
     }
-
-    func swipeCard(width: CGFloat) {
+    
+    private func swipeCard(width: CGFloat) {
         switch width {
         case -500 ... -150:
             print("Card removed")
@@ -58,11 +61,23 @@ struct CardView: View {
         case 150 ... 500:
             print("Card added")
             offset = CGSize(width: 500, height: 0)
+            
+            // Call the async fetch function within a Task
+            Task {
+                if let detail = await fetchDrinkDetail(idDrink: drink.idDrink) {
+                    DispatchQueue.main.async {
+                        self.selectedDrinkDetail = detail
+                        self.isSheetPresented = true
+                    }
+                } else {
+                    print("No details found for drink with id: \(drink.idDrink)")
+                }
+            }
         default:
             offset = .zero
         }
     }
-
+    
     func changeColor(width: CGFloat) {
         switch width {
         case -500 ... -10:
@@ -74,6 +89,22 @@ struct CardView: View {
         default:
             color = .blue
             overlayOpacity = 0
+        }
+    }
+    
+    private func fetchDrinkDetail(idDrink: String) async -> DrinkDetail? {
+        guard let url = URL(string: "https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=\(idDrink)") else {
+            print("Invalid URL")
+            return nil
+        }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(for: URLRequest(url: url))
+            let decodedResponse = try JSONDecoder().decode([String: [DrinkDetail]].self, from: data)
+            return decodedResponse["drinks"]?.first
+        } catch {
+            print("Error fetching or decoding data: \(error.localizedDescription)")
+            return nil
         }
     }
 }

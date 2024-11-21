@@ -55,7 +55,7 @@ struct AddRecipeView: View {
                         guard let newItem = newItem else { return }
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self),
-                               let uiImage = UIImage(data: data)
+                                let uiImage = UIImage(data: data)
                             {
                                 inputImage = uiImage
                                 thumbnailImage = Image(uiImage: uiImage)
@@ -64,9 +64,13 @@ struct AddRecipeView: View {
                     }
 
                     // Recipe Title
-                    TextInput(label: "Title", placeholder: "Enter recipe title", text: $recipeTitle).padding(.bottom)
+                    TextInput(label: "Title", placeholder: "Enter recipe title", text: $recipeTitle)
+                        .padding(.bottom)
                     // Recipe Description
-                    TextInput(label: "Description", placeholder: "Enter a brief description", text: $recipeDescription).padding(.bottom)
+                    TextInput(
+                        label: "Description", placeholder: "Enter a brief description",
+                        text: $recipeDescription
+                    ).padding(.bottom)
                     // Ingredients
                     IngredientListView(ingredients: $recipeIngredients).padding(.bottom)
                     // Steps
@@ -82,7 +86,10 @@ struct AddRecipeView: View {
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button("Save") {
-                        if recipeTitle.isEmpty || recipeDescription.isEmpty || recipeIngredients.isEmpty || recipeSteps.isEmpty || recipePrepTime == 0 || recipeCookTime == 0 {
+                        if recipeTitle.isEmpty || recipeDescription.isEmpty
+                            || recipeIngredients.isEmpty || recipeSteps.isEmpty
+                            || recipePrepTime == 0 || recipeCookTime == 0
+                        {
                             showAlert = true
                         } else {
                             var newRecipe = Recipe(
@@ -96,7 +103,8 @@ struct AddRecipeView: View {
                             )
 
                             if let image = inputImage {
-                                let imagePath = saveImage(image: image, for: newRecipe) ?? "default_recipe"
+                                let imagePath =
+                                    saveImage(image: image, for: newRecipe) ?? "default_recipe"
                                 newRecipe.thumbnailImagePath = imagePath
                             } else {
                                 newRecipe.thumbnailImagePath = "default_recipe"
@@ -112,7 +120,9 @@ struct AddRecipeView: View {
             }
         }
         .alert(isPresented: $showAlert) {
-            Alert(title: Text("Error"), message: Text("Please fill in all the required fields."), dismissButton: .default(Text("OK")))
+            Alert(
+                title: Text("Error"), message: Text("Please fill in all the required fields."),
+                dismissButton: .default(Text("OK")))
         }
     }
 }
