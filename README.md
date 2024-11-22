@@ -1,7 +1,6 @@
-# OmRecipe
+# 🍽️ OmRecipes 🍰
 #### Video Demo:  https://www.youtube.com/watch?v=2QEuWLXTdWE
 
-# 🍽️ OmRecipes 🍰
 
 Welcome to the **OmRecipes** project! Here, you'll find a collection of delicious recipes to satisfy your cravings. Whether you're a beginner or a seasoned chef, there's something for everyone!
 
