@@ -20,11 +20,11 @@ Welcome to the **OmRecipes** project! Here, you'll find a collection of deliciou
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/nguy1068/MAD9137-SwiftRecipe.git
+   git clone git@github.com:nguy1068/OmRecipe.git
    ```
 2. Navigate to the project directory:
    ```bash
-   cd MAD9137-SwiftRecipe
+   cd OmRecipe
    ```
 
 ## 🍽️ How to Use
